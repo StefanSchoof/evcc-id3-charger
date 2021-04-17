@@ -1,0 +1,14 @@
+{
+  "name": "id3-evcc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "npm-vwconnectapi": "git+https://github.com/nightsha-de/npm-vwconnectapi.git"
+  }
+}
