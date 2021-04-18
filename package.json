@@ -9,6 +9,8 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
     "npm-vwconnectapi": "git+https://github.com/nightsha-de/npm-vwconnectapi.git"
   }
 }
