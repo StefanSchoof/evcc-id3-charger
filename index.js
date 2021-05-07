@@ -1,40 +1,30 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const api = require('npm-vwconnectapi');
+require('log-timestamp');
 
 const app = express();
-function defaultContentTypeMiddleware(req, res, next) {
-    req.headers['content-type'] = req.headers['content-type'] || 'text/plain';
-    next();
-}
+let enabledState = false;
 
-app.use(defaultContentTypeMiddleware);
 app.use(bodyParser.text());
-let statusRes;
-
-setInterval(async () => {
-    console.log("start status schedule");
-    const vwConn = setUp();
-    statusRes = await status(vwConn);
-    console.log(`finish status schedule: ${statusRes}`);
-}, 60 * 1000);
 
 app.get("/status", async (_, res) => {
+    const vwConn = setUp();
+    statusRes = await status(vwConn);
     console.log(`status: ${statusRes}`)
     res.send(statusRes);
 });
 
 app.get("/enabled", async (_, res) => {
-    const enabledRes = enabled();
-    console.log(`enabled: ${enabledRes}`)
-    res.send(enabledRes);
+    res.send(enabledState);
 });
 
 app.post("/enable",
     async (req, res) => {
         const vwConn = setUp();
-        console.log(`!!!!!!start enable ${req.body}`);
-        await enable(vwConn, req.body);
+        console.log(`start enable ${req.body}`);
+        enabledState = req.body === "true"
+        await enable(vwConn, enabledState);
         res.send("OK");
     }
 );
@@ -46,11 +36,8 @@ app.post("/maxcurrent",
     }
 );
 
-status(setUp()).then(res => {
-    statusRes = res;
-    app.listen(8080);
-    console.log("Listen on Port 8080");
-});
+app.listen(8080);
+console.log("Listen on Port 8080");
 
 function setUp() {
     const vwConn = new api.VwWeConnect();
@@ -60,20 +47,18 @@ function setUp() {
     return vwConn;
 }
 
-function enabled() {
-    return statusRes === "C";
-}
-
 async function enable(vwConn, enable) {
     await vwConn.getData();
     vwConn.setActiveVin(process.env.vin);
-    if (enable === "true") {
+    if (enable) {
         console.log("startCharging");
         await vwConn.startCharging();
+        console.log("finish startCharging");
     }
     else {
         console.log("stopCharging");
         await vwConn.stopCharging();
+        console.log("finish stopCharging");
     }
 }
 
