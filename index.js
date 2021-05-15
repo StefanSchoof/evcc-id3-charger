@@ -5,13 +5,17 @@ require('log-timestamp');
 
 const app = express();
 let enabledState = false;
+let previousStatus = "Startup"
 
 app.use(bodyParser.text());
 
 app.get("/status", async (_, res) => {
     const vwConn = setUp();
-    statusRes = await status(vwConn);
-    console.log(`status: ${statusRes}`)
+    const statusRes = await status(vwConn);
+    if (previousStatus !== statusRes) {
+        console.log(`new status: ${statusRes}`);
+        previousStatus = statusRes;
+    }
     res.send(statusRes);
 });
 
