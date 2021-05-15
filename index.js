@@ -1,53 +1,73 @@
+const express = require('express');
+const bodyParser = require('body-parser');
 const api = require('npm-vwconnectapi');
-main();
-async function main() {
-    switch (process.argv[2]) {
-        case "enable":
-            await enable(process.argv[3]);
-            break;
+require('log-timestamp');
 
-        case "enabled":
-            await enabled();
-            break;
+const app = express();
+let enabledState = false;
+let previousStatus = "Startup"
 
-        default:
-            await status();
-            break;
+app.use(bodyParser.text());
+
+app.get("/status", async (_, res) => {
+    const vwConn = setUp();
+    const statusRes = await status(vwConn);
+    if (previousStatus !== statusRes) {
+        console.log(`new status: ${statusRes}`);
+        previousStatus = statusRes;
     }
-    process.exit(0);
-}
+    res.send(statusRes);
+});
 
-async function setUp() {
+app.get("/enabled", async (_, res) => {
+    res.send(enabledState);
+});
+
+app.post("/enable",
+    async (req, res) => {
+        const vwConn = setUp();
+        console.log(`start enable ${req.body}`);
+        enabledState = req.body === "true"
+        await enable(vwConn, enabledState);
+        res.send("OK");
+    }
+);
+
+app.post("/maxcurrent",
+    async (req, res) => {
+        console.log(`start maxcurrent ${req.body}`);
+        res.send("Not Implemented");
+    }
+);
+
+app.listen(8080);
+console.log("Listen on Port 8080");
+
+function setUp() {
     const vwConn = new api.VwWeConnect();
-    // vwConn.setLogLevel("INFO"); // optional, ERROR (default), INFO or DEBUG
     vwConn.setCredentials(process.env.mail, process.env.password);
     vwConn.setConfig("id");
-    await vwConn.getData()
-    vwConn.setActiveVin(process.env.vin);
+
     return vwConn;
 }
 
-async function enabled() {
-    const vwConn = await setUp();
-    console.log(vwChargingStateToState(vwConn) === "C");
-}
-
-async function enable(enable) {
-    const vwConn = await setUp();
-    if (enable === "true") {
+async function enable(vwConn, enable) {
+    await vwConn.getData();
+    vwConn.setActiveVin(process.env.vin);
+    if (enable) {
+        console.log("startCharging");
         await vwConn.startCharging();
+        console.log("finish startCharging");
     }
     else {
+        console.log("stopCharging");
         await vwConn.stopCharging();
+        console.log("finish stopCharging");
     }
 }
 
-async function status() {
-    const vwConn = await setUp()
-    console.log(vwChargingStateToState(vwConn));
-}
-
-function vwChargingStateToState(vwConn) {
+async function status(vwConn) {
+    await vwConn.getData();
     chargingState = vwConn.idData.data.chargingStatus.chargingState;
     plugConnectionState = vwConn.idData.data.plugStatus.plugConnectionState;
     if (plugConnectionState === "disconnected") {
