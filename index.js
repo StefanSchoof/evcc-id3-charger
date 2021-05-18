@@ -10,8 +10,14 @@ let previousStatus = "Startup"
 app.use(bodyParser.text());
 
 app.get("/status", async (_, res) => {
-    const vwConn = setUp();
-    const statusRes = await status(vwConn);
+    let statusRes;
+    try {
+        const vwConn = setUp();
+        statusRes = await status(vwConn);
+    } catch (e) {
+        console.warn(e);
+        statusRes = "F";
+    }
     if (previousStatus !== statusRes) {
         console.log(`new status: ${statusRes}`);
         previousStatus = statusRes;
